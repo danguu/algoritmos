@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caballo de Ajedrez</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        header {
+            background: #0073e6;
+            color: white;
+            padding: 15px;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        nav ul li {
+            display: inline;
+            margin: 0 10px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        table {
+            margin: auto;
+            border-collapse: collapse;
+        }
+
+        td {
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            text-align: center;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .visited {
+            background-color: lightblue;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Caballo de Ajedrez</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="hanoi.html">Torre de Hanói</a></li>
+                <li><a href="grafos.html">Taller de Grafos</a></li>
+                <li><a href="dijkstra.html">Dijkstra</a></li>
+                <li><a href="parcial.html">Parcial - Dron</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>El Problema del Caballo de Ajedrez</h2>
+        <p>Intenta mover el caballo de manera que recorra todas las casillas sin repetir movimientos.</p>
+        <table id="chessboard"></table>
+        <button onclick="resetBoard()">Reiniciar</button>
+    </main>
+    <script>
+        const size = 8;
+        let board = Array.from({ length: size }, () => Array(size).fill(false));
+        let moves = [[2, 1], [1, 2], [-1, 2], [-2, 1], [-2, -1], [-1, -2], [1, -2], [2, -1]];
+        let currentX = 0, currentY = 0;
+        let moveCount = 1;
+
+        function createBoard() {
+            let table = document.getElementById("chessboard");
+            for (let i = 0; i < size; i++) {
+                let row = table.insertRow();
+                for (let j = 0; j < size; j++) {
+                    let cell = row.insertCell();
+                    cell.id = `${i}-${j}`;
+                    cell.onclick = () => moveKnight(i, j);
+                }
+            }
+            board[currentX][currentY] = true;
+            document.getElementById(`${currentX}-${currentY}`).classList.add("visited");
+        }
+
+        function isValidMove(x, y) {
+            if (x < 0 || y < 0 || x >= size || y >= size || board[x][y]) return false;
+            for (let [dx, dy] of moves) {
+                if (currentX + dx === x && currentY + dy === y) return true;
+            }
+            return false;
+        }
+
+        function moveKnight(x, y) {
+            if (isValidMove(x, y)) {
+                currentX = x;
+                currentY = y;
+                board[x][y] = true;
+                document.getElementById(`${x}-${y}`).classList.add("visited");
+                moveCount++;
+                if (moveCount === size * size) {
+                    alert("¡Felicidades! Completaste el recorrido.");
+                }
+            } else {
+                alert("Movimiento no válido.");
+            }
+        }
+
+        function resetBoard() {
+            board = Array.from({ length: size }, () => Array(size).fill(false));
+            document.querySelectorAll("td").forEach(cell => cell.classList.remove("visited"));
+            currentX = 0;
+            currentY = 0;
+            moveCount = 1;
+            board[currentX][currentY] = true;
+            document.getElementById(`${currentX}-${currentY}`).classList.add("visited");
+        }
+
+        window.onload = createBoard;
+    </script>
+</body>
+
+</html>

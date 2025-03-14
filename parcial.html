@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimización de Ruta - Dron</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        header {
+            background: #0073e6;
+            color: white;
+            padding: 15px;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        nav ul li {
+            display: inline;
+            margin: 0 10px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        .graph-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        canvas {
+            border: 1px solid black;
+        }
+
+        #results {
+            margin-top: 20px;
+            font-size: 18px;
+            background: #f8f8f8;
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 50%;
+            text-align: left;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Optimización de Ruta - Dron</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="caballo.html">Caballo de Ajedrez</a></li>
+                <li><a href="hanoi.html">Torre de Hanói</a></li>
+                <li><a href="grafos.html">Taller de Grafos</a></li>
+                <li><a href="dijkstra.html">Dijkstra</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Ruta óptima para el dron</h2>
+        <p>Añade nodos, conexiones con pesos y marca zonas restringidas.</p>
+        <div class="graph-container">
+            <canvas id="graphCanvas" width="400" height="400"></canvas>
+            <button onclick="toggleEdgeMode()">Añadir Conexiones</button>
+            <button onclick="toggleRestrictedMode()">Marcar Zonas Restringidas</button>
+            <button onclick="runDijkstra()">Ejecutar Ruta Óptima</button>
+            <button onclick="resetGraph()">Reiniciar</button>
+            <div id="results">Resultados aparecerán aquí...</div>
+        </div>
+    </main>
+    <script>
+        let canvas = document.getElementById("graphCanvas");
+        let ctx = canvas.getContext("2d");
+        let nodes = [];
+        let edges = [];
+        let restrictedZones = new Set();
+        let edgeMode = false;
+        let restrictedMode = false;
+        let selectedNode = null;
+
+        canvas.addEventListener("click", function (event) {
+            let x = event.offsetX;
+            let y = event.offsetY;
+            let clickedNode = findNode(x, y);
+
+            if (restrictedMode) {
+                if (clickedNode !== null) {
+                    restrictedZones.add(clickedNode);
+                    drawGraph();
+                }
+            } else if (edgeMode) {
+                if (clickedNode !== null) {
+                    if (selectedNode === null) {
+                        selectedNode = clickedNode;
+                    } else if (selectedNode !== clickedNode) {
+                        let weight = prompt("Ingrese el peso de la conexión:", "1");
+                        if (weight !== null) {
+                            edges.push({ from: selectedNode, to: clickedNode, weight: parseInt(weight) });
+                            selectedNode = null;
+                            drawGraph();
+                        }
+                    }
+                }
+            } else {
+                if (clickedNode === null) {
+                    nodes.push({ x, y, id: nodes.length });
+                    drawGraph();
+                }
+            }
+        });
+
+        function findNode(x, y) {
+            let node = nodes.find(node => Math.hypot(node.x - x, node.y - y) < 15);
+            return node ? node.id : null;
+        }
+
+        function toggleEdgeMode() {
+            edgeMode = !edgeMode;
+            restrictedMode = false;
+            selectedNode = null;
+            alert(edgeMode ? "Modo conexiones activado." : "Modo conexiones desactivado.");
+        }
+
+        function toggleRestrictedMode() {
+            restrictedMode = !restrictedMode;
+            edgeMode = false;
+            alert(restrictedMode ? "Modo zonas restringidas activado. Haz clic en un nodo para restringirlo." : "Modo zonas restringidas desactivado.");
+        }
+
+        function runDijkstra() {
+            let startNode = parseInt(prompt("Ingrese el nodo de inicio:"));
+            if (isNaN(startNode) || startNode < 0 || startNode >= nodes.length || restrictedZones.has(startNode)) {
+                alert("Nodo inválido o restringido");
+                return;
+            }
+
+            let distances = {};
+            let visited = new Set();
+            let queue = [];
+            nodes.forEach(node => distances[node.id] = Infinity);
+            distances[startNode] = 0;
+            queue.push({ id: startNode, distance: 0 });
+
+            let results = `Ejecución de Dijkstra:\n`;
+            while (queue.length > 0) {
+                queue.sort((a, b) => a.distance - b.distance);
+                let { id } = queue.shift();
+                if (visited.has(id) || restrictedZones.has(id)) continue;
+                visited.add(id);
+                results += `Visitando nodo ${id}\n`;
+
+                edges.filter(e => (e.from === id || e.to === id) && !restrictedZones.has(e.from) && !restrictedZones.has(e.to))
+                    .forEach(edge => {
+                        let neighbor = edge.from === id ? edge.to : edge.from;
+                        if (!visited.has(neighbor)) {
+                            let newDist = distances[id] + edge.weight;
+                            if (newDist < distances[neighbor]) {
+                                distances[neighbor] = newDist;
+                                queue.push({ id: neighbor, distance: newDist });
+                            }
+                        }
+                    });
+            }
+            results += `\nDistancias desde ${startNode}:\n` + JSON.stringify(distances, null, 2);
+            document.getElementById("results").innerText = results;
+        }
+
+        function resetGraph() {
+            nodes = [];
+            edges = [];
+            restrictedZones.clear();
+            document.getElementById("results").innerText = "";
+            drawGraph();
+        }
+
+        function drawGraph() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            edges.forEach(edge => {
+                let from = nodes.find(n => n.id === edge.from);
+                let to = nodes.find(n => n.id === edge.to);
+                ctx.beginPath();
+                ctx.moveTo(from.x, from.y);
+                ctx.lineTo(to.x, to.y);
+                ctx.stroke();
+            });
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = restrictedZones.has(node.id) ? "red" : "blue";
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+    </script>
+</body>
+
+</html>

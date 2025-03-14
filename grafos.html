@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taller de Grafos</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        header {
+            background: #0073e6;
+            color: white;
+            padding: 15px;
+        }
+
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        nav ul li {
+            display: inline;
+            margin: 0 10px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        .graph-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Taller de Grafos</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="caballo.html">Caballo de Ajedrez</a></li>
+                <li><a href="hanoi.html">Torre de Hanói</a></li>
+                <li><a href="dijkstra.html">Dijkstra</a></li>
+                <li><a href="parcial.html">Parcial - Dron</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Exploración de Grafos</h2>
+        <p>Añade nodos y conexiones para explorar algoritmos como BFS y DFS.</p>
+        <div class="graph-container">
+            <canvas id="graphCanvas" width="400" height="400"></canvas>
+            <button onclick="toggleEdgeMode()">Añadir Conexiones</button>
+            <button onclick="runBFS()">Ejecutar BFS</button>
+            <button onclick="runDFS()">Ejecutar DFS</button>
+            <button onclick="resetGraph()">Reiniciar</button>
+        </div>
+    </main>
+    <script>
+        let canvas = document.getElementById("graphCanvas");
+        let ctx = canvas.getContext("2d");
+        let nodes = [];
+        let edges = [];
+        let edgeMode = false;
+        let selectedNode = null;
+
+        canvas.addEventListener("click", function (event) {
+            let x = event.offsetX;
+            let y = event.offsetY;
+            let clickedNode = findNode(x, y);
+
+            if (edgeMode) {
+                if (clickedNode !== null) {
+                    if (selectedNode === null) {
+                        selectedNode = clickedNode;
+                    } else if (selectedNode !== clickedNode) {
+                        edges.push({ from: selectedNode, to: clickedNode });
+                        selectedNode = null;
+                        drawGraph();
+                    }
+                }
+            } else {
+                if (clickedNode === null) {
+                    nodes.push({ x, y, id: nodes.length });
+                    drawGraph();
+                }
+            }
+        });
+
+        function findNode(x, y) {
+            let node = nodes.find(node => Math.hypot(node.x - x, node.y - y) < 15);
+            return node ? node.id : null;
+        }
+
+        function toggleEdgeMode() {
+            edgeMode = !edgeMode;
+            selectedNode = null;
+            alert(edgeMode ? "Modo conexiones activado. Selecciona dos nodos para conectar." : "Modo conexiones desactivado.");
+        }
+
+        function drawGraph() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            edges.forEach(edge => {
+                let from = nodes.find(n => n.id === edge.from);
+                let to = nodes.find(n => n.id === edge.to);
+                ctx.beginPath();
+                ctx.moveTo(from.x, from.y);
+                ctx.lineTo(to.x, to.y);
+                ctx.stroke();
+            });
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = "white";
+                ctx.fillText(node.id, node.x - 3, node.y + 3);
+            });
+        }
+
+        function runBFS() {
+            if (nodes.length === 0 || edges.length === 0) return;
+            let visited = new Set();
+            let queue = [nodes[0].id];
+            let result = "BFS: ";
+            while (queue.length > 0) {
+                let current = queue.shift();
+                if (!visited.has(current)) {
+                    visited.add(current);
+                    result += current + " ";
+                    edges.filter(e => e.from === current || e.to === current).forEach(e => {
+                        let neighbor = e.from === current ? e.to : e.from;
+                        if (!visited.has(neighbor)) queue.push(neighbor);
+                    });
+                }
+            }
+            alert(result);
+        }
+
+        function runDFS() {
+            if (nodes.length === 0 || edges.length === 0) return;
+            let visited = new Set();
+            let stack = [nodes[0].id];
+            let result = "DFS: ";
+            while (stack.length > 0) {
+                let current = stack.pop();
+                if (!visited.has(current)) {
+                    visited.add(current);
+                    result += current + " ";
+                    edges.filter(e => e.from === current || e.to === current).forEach(e => {
+                        let neighbor = e.from === current ? e.to : e.from;
+                        if (!visited.has(neighbor)) stack.push(neighbor);
+                    });
+                }
+            }
+            alert(result);
+        }
+
+        function resetGraph() {
+            nodes = [];
+            edges = [];
+            drawGraph();
+        }
+
+        window.onload = drawGraph;
+    </script>
+</body>
+
+</html>
